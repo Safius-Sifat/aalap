@@ -1,18 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { ProfileModal } from '@/components/modals/ProfileModal';
+import { Avatar } from '@/components/ui/Avatar';
+import { useChats } from '@/hooks/useChats';
+import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 import { LogOut, MessageCirclePlus, UserRoundPen, UsersRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { SearchBar } from './SearchBar';
+import { useEffect, useState } from 'react';
 import { ChatList } from './ChatList';
-import { useChats } from '@/hooks/useChats';
-import { useChatStore } from '@/stores/chatStore';
-import { Avatar } from '@/components/ui/Avatar';
-import { useAuthStore } from '@/stores/authStore';
 import { NewChatModal } from './NewChatModal';
 import { NewGroupModal } from './NewGroupModal';
+import { SearchBar } from './SearchBar';
 import { UserSearchResults } from './UserSearchResults';
-import { ProfileModal } from '@/components/modals/ProfileModal';
 
 export function Sidebar() {
   const router = useRouter();
@@ -32,7 +32,7 @@ export function Sidebar() {
   }, [chats, setChats]);
 
   return (
-    <aside className="flex h-full flex-col bg-[var(--wa-panel-dark)]">
+    <aside className="flex h-full w-full flex-col bg-[var(--wa-panel-dark)]">
       <div className="flex items-center justify-between border-b border-[#2A3942] bg-[#202C33] px-4 py-3">
         <div className="flex items-center gap-3">
           <Avatar src={user?.avatar} name={user?.name} size={40} />
