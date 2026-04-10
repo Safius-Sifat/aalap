@@ -3,6 +3,7 @@ name: Build And Deploy To VPS
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -110,6 +111,19 @@ jobs:
 
           echo "host=$host" >> "$GITHUB_OUTPUT"
 
+      - name: Preflight SSH and target path
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ steps.vps_host.outputs.host }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            mkdir -p "${{ secrets.VPS_DEPLOY_PATH }}"
+            touch "${{ secrets.VPS_DEPLOY_PATH }}/.write_test"
+            rm -f "${{ secrets.VPS_DEPLOY_PATH }}/.write_test"
+            echo "SSH preflight OK"
+
       - name: Copy deployment files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -119,6 +133,7 @@ jobs:
           source: "deploy/*"
           target: "${{ secrets.VPS_DEPLOY_PATH }}"
           strip_components: 1
+          debug: true
 
       - name: Deploy on VPS
         uses: appleboy/ssh-action@v1.0.3
