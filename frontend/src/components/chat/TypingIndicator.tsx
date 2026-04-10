@@ -6,16 +6,21 @@ type Props = {
   chatId: string;
 };
 
-export function TypingIndicator({ chatId }: Props) {
-  const typingUsers = useChatStore((state) => state.typingUsers[chatId] ?? []);
+const EMPTY_TYPING_USERS: string[] = [];
 
-  if (!typingUsers.length) {
+export function TypingIndicator({ chatId }: Props) {
+  const typingUsers = useChatStore((state) => state.typingUsers[chatId]);
+  const visibleTypingUsers = typingUsers ?? EMPTY_TYPING_USERS;
+
+  if (!visibleTypingUsers.length) {
     return null;
   }
 
   return (
     <div className="px-4 pb-1 text-xs text-[var(--wa-text-secondary)]">
-      {typingUsers.length === 1 ? 'Someone is typing...' : `${typingUsers.length} people are typing...`}
+      {visibleTypingUsers.length === 1
+        ? 'Someone is typing...'
+        : `${visibleTypingUsers.length} people are typing...`}
     </div>
   );
 }

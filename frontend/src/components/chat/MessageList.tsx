@@ -27,14 +27,6 @@ export function MessageList({
     const pendingPrependRef = useRef<{ prevHeight: number; prevTop: number } | null>(null);
     const [isNearBottom, setIsNearBottom] = useState(true);
 
-    if (!messages.length) {
-        return (
-            <div className="flex flex-1 items-center justify-center px-4 text-sm text-[var(--wa-text-secondary)]">
-                No messages yet. Say hi!
-            </div>
-        );
-    }
-
     const handleLoadOlder = async () => {
         if (scrollRef.current) {
             pendingPrependRef.current = {
@@ -83,6 +75,14 @@ export function MessageList({
 
         prevLengthRef.current = currentLength;
     }, [messages, isNearBottom]);
+
+    if (!messages.length) {
+        return (
+            <div className="flex flex-1 items-center justify-center px-4 text-sm text-[var(--wa-text-secondary)]">
+                No messages yet. Say hi!
+            </div>
+        );
+    }
 
     return (
         <div ref={scrollRef} onScroll={updateNearBottom} className="flex-1 overflow-y-auto py-4">
