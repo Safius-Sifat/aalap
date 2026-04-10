@@ -77,10 +77,43 @@ jobs:
       - name: Verify deployment files
         run: ls -la deploy
 
+      - name: Resolve and validate VPS host
+        id: vps_host
+        shell: bash
+        env:
+          RAW_VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          set -euo pipefail
+
+          host="${RAW_VPS_HOST#http://}"
+          host="${host#https://}"
+          host="${host%%/*}"
+
+          if [[ -z "$host" ]]; then
+            echo "::error::VPS_HOST is empty or invalid. Set it to a plain hostname or public IP."
+            exit 1
+          fi
+
+          # If the secret was saved as host:port, keep only host because port is configured separately.
+          if [[ "$host" =~ ^([^:]+):[0-9]+$ ]]; then
+            host="${BASH_REMATCH[1]}"
+          fi
+
+          if [[ "$host" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Using VPS IP target."
+          else
+            if ! getent hosts "$host" >/dev/null; then
+              echo "::error::Cannot resolve VPS_HOST '$host'. Use a valid DNS hostname or direct server IP."
+              exit 1
+            fi
+          fi
+
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+
       - name: Copy deployment files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_HOST }}
+          host: ${{ steps.vps_host.outputs.host }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           source: "deploy/*"
@@ -112,7 +145,7 @@ jobs:
           R2_REGION: ${{ secrets.R2_REGION }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         with:
-          host: ${{ secrets.VPS_HOST }}
+          host: ${{ steps.vps_host.outputs.host }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           envs: DOMAIN,GITHUB_REPOSITORY_OWNER,IMAGE_TAG,GHCR_USER,GHCR_TOKEN,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,DATABASE_URL,REDIS_URL,JWT_ACCESS_SECRET,JWT_REFRESH_SECRET,JWT_ACCESS_EXPIRES,JWT_REFRESH_EXPIRES,R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY,R2_BUCKET_NAME,R2_PUBLIC_URL,R2_REGION,R2_ENDPOINT
