@@ -233,9 +233,12 @@ jobs:
             mkdir -p "$DEPLOY_PATH"
             cd "$DEPLOY_PATH"
 
+            OWNER_LOWER="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+            echo "Using GHCR owner: $OWNER_LOWER"
+
             cat > .env <<EOF
             DOMAIN=$DOMAIN
-            GITHUB_REPOSITORY_OWNER=$GITHUB_REPOSITORY_OWNER
+            GITHUB_REPOSITORY_OWNER=$OWNER_LOWER
             IMAGE_TAG=$IMAGE_TAG
             POSTGRES_USER=$POSTGRES_USER
             POSTGRES_PASSWORD=$POSTGRES_PASSWORD
@@ -256,6 +259,7 @@ jobs:
             EOF
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            docker compose -f docker-compose.prod.yml --env-file .env config | grep 'image:'
             docker compose -f docker-compose.prod.yml --env-file .env pull
             docker compose -f docker-compose.prod.yml --env-file .env up -d --remove-orphans
             docker image prune -af
