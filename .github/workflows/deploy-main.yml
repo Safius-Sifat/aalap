@@ -78,6 +78,23 @@ jobs:
       - name: Verify deployment files
         run: ls -la deploy
 
+      - name: Validate GHCR credentials
+        shell: bash
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GHCR_USERNAME:-}" ]]; then
+            echo "::error::Missing GHCR_USERNAME secret. Set it to the GitHub username that owns GHCR_PAT."
+            exit 1
+          fi
+
+          if [[ -z "${GHCR_PAT:-}" ]]; then
+            echo "::error::Missing GHCR_PAT secret. Set a token with read:packages scope."
+            exit 1
+          fi
+
       - name: Resolve and validate VPS host
         id: vps_host
         shell: bash
@@ -107,16 +124,48 @@ jobs:
               echo "::error::Cannot resolve VPS_HOST '$host'. Use a valid DNS hostname or direct server IP."
               exit 1
             fi
+            resolved_ip="$(getent hosts "$host" | awk '{print $1; exit}')"
+            echo "Resolved VPS host '$host' to '$resolved_ip'"
+            if [[ "$resolved_ip" =~ ^104\.2[0-9]\.|^172\.(6[4-9]|7[0-9])\.|^188\.114\.|^190\.93\.|^197\.234\.|^198\.41\. ]]; then
+              echo "::warning::VPS_HOST appears to resolve to a Cloudflare edge IP. SSH will timeout unless you use origin server IP or a DNS-only (unproxied) host."
+            fi
           fi
 
           echo "host=$host" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve VPS SSH port
+        id: vps_port
+        shell: bash
+        env:
+          RAW_VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          set -euo pipefail
+          port="${RAW_VPS_PORT:-22}"
+          if [[ -z "$port" ]]; then
+            port="22"
+          fi
+
+          if ! [[ "$port" =~ ^[0-9]+$ ]]; then
+            echo "::error::VPS_PORT must be numeric (for example: 22)."
+            exit 1
+          fi
+
+          if (( port < 1 || port > 65535 )); then
+            echo "::error::VPS_PORT must be between 1 and 65535."
+            exit 1
+          fi
+
+          echo "port=$port" >> "$GITHUB_OUTPUT"
 
       - name: Preflight SSH and target path
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ steps.vps_host.outputs.host }}
+          port: ${{ steps.vps_port.outputs.port }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          timeout: 90s
+          command_timeout: 2m
           script: |
             set -e
             mkdir -p "${{ secrets.VPS_DEPLOY_PATH }}"
@@ -128,11 +177,14 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ steps.vps_host.outputs.host }}
+          port: ${{ steps.vps_port.outputs.port }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           source: "deploy/*"
           target: "${{ secrets.VPS_DEPLOY_PATH }}"
           strip_components: 1
+          timeout: 90s
+          command_timeout: 20m
           debug: true
 
       - name: Deploy on VPS
@@ -141,7 +193,7 @@ jobs:
           DOMAIN: ${{ secrets.DOMAIN }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
           IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
-          GHCR_USER: ${{ github.actor }}
+          GHCR_USER: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -161,8 +213,11 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         with:
           host: ${{ steps.vps_host.outputs.host }}
+          port: ${{ steps.vps_port.outputs.port }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          timeout: 90s
+          command_timeout: 20m
           envs: DOMAIN,GITHUB_REPOSITORY_OWNER,IMAGE_TAG,GHCR_USER,GHCR_TOKEN,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,DATABASE_URL,REDIS_URL,JWT_ACCESS_SECRET,JWT_REFRESH_SECRET,JWT_ACCESS_EXPIRES,JWT_REFRESH_EXPIRES,R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY,R2_BUCKET_NAME,R2_PUBLIC_URL,R2_REGION,R2_ENDPOINT
           script: |
             set -e

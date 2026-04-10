@@ -22,11 +22,19 @@ Traffic routing:
 Set these in: **GitHub repo -> Settings -> Secrets and variables -> Actions**
 
 - `VPS_HOST`
+- `VPS_PORT` (optional, defaults to `22`)
 - `VPS_USER`
 - `VPS_SSH_KEY` (private key)
 - `VPS_DEPLOY_PATH` (e.g. `/opt/aalap`)
 - `DOMAIN` (e.g. `chat.example.com`)
-- `GHCR_PAT` (PAT with `read:packages` and `write:packages`)
+- `GHCR_USERNAME` (GitHub username that owns the token below)
+- `GHCR_PAT` (PAT with at least `read:packages`; `write:packages` if you also push with it)
+
+`VPS_HOST` for SSH must be your origin server IP or a DNS-only hostname that resolves to your origin.
+Do not use a Cloudflare proxied hostname for SSH because it will timeout.
+
+If your images are under an organization, ensure the token user has access to that org packages
+and SSO is authorized for the token (if your org enforces SSO).
 
 Database/runtime:
 
