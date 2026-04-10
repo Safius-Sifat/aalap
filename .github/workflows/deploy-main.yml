@@ -199,7 +199,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           DOMAIN: ${{ secrets.DOMAIN }}
-          GITHUB_REPOSITORY_OWNER: ${{ needs.build-and-push.outputs.ghcr_owner }}
+          GHCR_REPO_OWNER: ${{ needs.build-and-push.outputs.ghcr_owner }}
           IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
           GHCR_USER: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
@@ -226,19 +226,19 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           timeout: 90s
           command_timeout: 20m
-          envs: DOMAIN,GITHUB_REPOSITORY_OWNER,IMAGE_TAG,GHCR_USER,GHCR_TOKEN,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,DATABASE_URL,REDIS_URL,JWT_ACCESS_SECRET,JWT_REFRESH_SECRET,JWT_ACCESS_EXPIRES,JWT_REFRESH_EXPIRES,R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY,R2_BUCKET_NAME,R2_PUBLIC_URL,R2_REGION,R2_ENDPOINT
+          envs: DOMAIN,GHCR_REPO_OWNER,IMAGE_TAG,GHCR_USER,GHCR_TOKEN,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,DATABASE_URL,REDIS_URL,JWT_ACCESS_SECRET,JWT_REFRESH_SECRET,JWT_ACCESS_EXPIRES,JWT_REFRESH_EXPIRES,R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY,R2_BUCKET_NAME,R2_PUBLIC_URL,R2_REGION,R2_ENDPOINT
           script: |
             set -e
             DEPLOY_PATH="${{ secrets.VPS_DEPLOY_PATH }}"
             mkdir -p "$DEPLOY_PATH"
             cd "$DEPLOY_PATH"
 
-            OWNER_LOWER="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+            OWNER_LOWER="$(echo "$GHCR_REPO_OWNER" | tr '[:upper:]' '[:lower:]' | tr -d '\r')"
             echo "Using GHCR owner: $OWNER_LOWER"
 
             cat > .env <<EOF
             DOMAIN=$DOMAIN
-            GITHUB_REPOSITORY_OWNER=$OWNER_LOWER
+            GHCR_REPO_OWNER=$OWNER_LOWER
             IMAGE_TAG=$IMAGE_TAG
             POSTGRES_USER=$POSTGRES_USER
             POSTGRES_PASSWORD=$POSTGRES_PASSWORD
@@ -258,6 +258,7 @@ jobs:
             R2_ENDPOINT=$R2_ENDPOINT
             EOF
 
+            unset GITHUB_REPOSITORY_OWNER
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             docker compose -f docker-compose.prod.yml --env-file .env config | grep 'image:'
             docker compose -f docker-compose.prod.yml --env-file .env pull

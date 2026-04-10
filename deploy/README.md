@@ -77,6 +77,9 @@ Swagger UI is exposed at:
 
 File: `.github/workflows/deploy-main.yml`
 
+Note: deploy uses a normalized lowercase runtime variable `GHCR_REPO_OWNER` for image references,
+so GHCR pulls remain valid even if repository owner casing differs.
+
 On push to `main`:
 
 1. Build frontend/backend images

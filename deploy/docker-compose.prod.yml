@@ -16,7 +16,7 @@ services:
       - backend
 
   frontend:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/aalap-frontend:${IMAGE_TAG}
+    image: ghcr.io/${GHCR_REPO_OWNER}/aalap-frontend:${IMAGE_TAG}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -24,7 +24,7 @@ services:
       NEXT_PUBLIC_SOCKET_URL: https://${DOMAIN}
 
   backend:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/aalap-backend:${IMAGE_TAG}
+    image: ghcr.io/${GHCR_REPO_OWNER}/aalap-backend:${IMAGE_TAG}
     restart: unless-stopped
     env_file:
       - ./.env
