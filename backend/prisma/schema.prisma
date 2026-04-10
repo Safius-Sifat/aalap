@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  phone          String    @unique
+  name           String
+  password       String
+  about          String    @default("Hey there! I am using Aalap.")
+  avatar         String?
+  avatarPublicId String?
+  lastSeen       DateTime?
+  isOnline       Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  refreshTokens  RefreshToken[]
+  chatMembers    ChatMember[]
+  sentMessages   Message[]      @relation("SentMessages")
+  readReceipts   ReadReceipt[]
+  groupsCreated  Chat[]         @relation("GroupCreator")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+enum ChatType {
+  DIRECT
+  GROUP
+}
+
+model Chat {
+  id             String     @id @default(cuid())
+  type           ChatType   @default(DIRECT)
+  name           String?
+  avatar         String?
+  avatarPublicId String?
+  description    String?
+  createdById    String?
+  createdBy      User?      @relation("GroupCreator", fields: [createdById], references: [id])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  members        ChatMember[]
+  messages       Message[]
+}
+
+enum MemberRole {
+  MEMBER
+  ADMIN
+}
+
+model ChatMember {
+  id       String     @id @default(cuid())
+  chatId   String
+  userId   String
+  role     MemberRole @default(MEMBER)
+  joinedAt DateTime   @default(now())
+
+  chat     Chat       @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  STICKER
+}
+
+model Message {
+  id            String      @id @default(cuid())
+  chatId        String
+  senderId      String
+  type          MessageType @default(TEXT)
+  content       String?
+  mediaUrl      String?
+  mediaPublicId String?
+  fileName      String?
+  replyToId     String?
+  isDeleted     Boolean     @default(false)
+  editedAt      DateTime?
+  createdAt     DateTime    @default(now())
+
+  chat          Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender        User        @relation("SentMessages", fields: [senderId], references: [id])
+  replyTo       Message?    @relation("Replies", fields: [replyToId], references: [id])
+  replies       Message[]   @relation("Replies")
+  readReceipts  ReadReceipt[]
+}
+
+model ReadReceipt {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}

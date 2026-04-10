@@ -1,0 +1,15 @@
+export enum SocketEvents {
+  JOIN_CHAT = 'join_chat',
+  LEAVE_CHAT = 'leave_chat',
+  SEND_MESSAGE = 'send_message',
+  TYPING_START = 'typing_start',
+  TYPING_STOP = 'typing_stop',
+  MARK_READ = 'mark_read',
+  NEW_MESSAGE = 'new_message',
+  MESSAGE_UPDATED = 'message_updated',
+  USER_TYPING = 'user_typing',
+  USER_ONLINE = 'user_online',
+  USER_OFFLINE = 'user_offline',
+  MESSAGES_READ = 'messages_read',
+  CHAT_UPDATED = 'chat_updated',
+}
