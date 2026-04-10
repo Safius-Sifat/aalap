@@ -13,10 +13,18 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     outputs:
+      ghcr_owner: ${{ steps.owner.outputs.value }}
       image_tag: ${{ steps.meta.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Normalize GHCR owner
+        id: owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "value=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -32,7 +40,7 @@ jobs:
         id: meta_frontend
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/aalap-frontend
+          images: ghcr.io/${{ steps.owner.outputs.value }}/aalap-frontend
           tags: |
             type=sha,format=short
             type=raw,value=latest
@@ -41,7 +49,7 @@ jobs:
         id: meta_backend
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/aalap-backend
+          images: ghcr.io/${{ steps.owner.outputs.value }}/aalap-backend
           tags: |
             type=sha,format=short
             type=raw,value=latest
@@ -191,7 +199,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           DOMAIN: ${{ secrets.DOMAIN }}
-          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY_OWNER: ${{ needs.build-and-push.outputs.ghcr_owner }}
           IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
           GHCR_USER: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
