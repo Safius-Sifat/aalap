@@ -26,5 +26,5 @@ backend/prisma/migrations
 # Next.js
 frontend/.next
 plan.md
-.github/
+.github/prompts/
 .opencode/
