@@ -27,6 +27,15 @@ export type Message = {
   isDeleted: boolean;
   createdAt: string;
   sender: Pick<User, 'id' | 'name' | 'avatar'>;
+  replyTo?: {
+    id: string;
+    content?: string | null;
+    type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'STICKER';
+    isDeleted?: boolean;
+    sender?: {
+      name?: string;
+    } | null;
+  } | null;
   readReceipts?: Array<{ userId: string; readAt: string }>;
 };
 

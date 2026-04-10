@@ -3,14 +3,15 @@
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuthStore } from '@/stores/authStore';
 import { Chat } from '@/types';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 type Props = {
   chat: Chat | undefined;
+  onOpenGroupInfo?: () => void;
 };
 
-export function ChatHeader({ chat }: Props) {
+export function ChatHeader({ chat, onOpenGroupInfo }: Props) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const other = chat?.members.find((member) => member.userId !== user?.id)?.user;
@@ -38,6 +39,16 @@ export function ChatHeader({ chat }: Props) {
         <p className="truncate text-sm font-medium text-white">{title ?? 'Select a chat'}</p>
         <p className="truncate text-xs text-[var(--wa-text-secondary)]">{subtitle}</p>
       </div>
+
+      {chat?.type === 'GROUP' ? (
+        <button
+          onClick={onOpenGroupInfo}
+          className="ml-auto rounded-md p-1 text-[var(--wa-text-secondary)] hover:bg-[#2A3942]"
+          title="Group info"
+        >
+          <Info size={16} />
+        </button>
+      ) : null}
     </header>
   );
 }

@@ -5,17 +5,21 @@ type ChatState = {
   chats: Chat[];
   activeChatId: string | null;
   typingUsers: Record<string, string[]>;
+  replyTo: Message | null;
   setChats: (chats: Chat[]) => void;
   upsertChat: (chat: Chat) => void;
   setActiveChat: (id: string | null) => void;
   setTyping: (chatId: string, userId: string, typing: boolean) => void;
   updateLastMessage: (chatId: string, message: Message) => void;
+  setReplyTo: (message: Message | null) => void;
+  clearReplyTo: () => void;
 };
 
 export const useChatStore = create<ChatState>((set) => ({
   chats: [],
   activeChatId: null,
   typingUsers: {},
+  replyTo: null,
   setChats: (chats) => set({ chats }),
   upsertChat: (chat) =>
     set((state) => {
@@ -60,4 +64,6 @@ export const useChatStore = create<ChatState>((set) => ({
           return bDate - aDate;
         }),
     })),
+  setReplyTo: (message) => set({ replyTo: message }),
+  clearReplyTo: () => set({ replyTo: null }),
 }));

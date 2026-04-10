@@ -6,7 +6,9 @@ import { Smile, Paperclip, SendHorizontal } from 'lucide-react';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 import { SocketEvents } from '@/types';
+import { ReplyPreview } from './ReplyPreview';
 
 type Props = {
   chatId: string;
@@ -14,6 +16,8 @@ type Props = {
 
 export function MessageInput({ chatId }: Props) {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const replyTo = useChatStore((state) => state.replyTo);
+  const clearReplyTo = useChatStore((state) => state.clearReplyTo);
   const [text, setText] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
   const typingTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -41,10 +45,12 @@ export function MessageInput({ chatId }: Props) {
       chatId,
       content: text.trim(),
       type: 'TEXT',
+      replyToId: replyTo?.id,
     });
 
     setText('');
     setShowEmoji(false);
+    clearReplyTo();
   };
 
   const uploadAndSendFile = async (file: File) => {
@@ -69,6 +75,16 @@ export function MessageInput({ chatId }: Props) {
 
   return (
     <div className="relative border-t border-[#2A3942] bg-[#202C33] px-3 py-2">
+      {replyTo ? (
+        <ReplyPreview
+          reply={{
+            content: replyTo.content ?? 'Media message',
+            senderName: replyTo.sender?.name,
+          }}
+          onClose={clearReplyTo}
+        />
+      ) : null}
+
       <div className="flex items-end gap-2">
         <button
           className="rounded-full p-2 text-[var(--wa-icon)] hover:bg-[#2A3942]"

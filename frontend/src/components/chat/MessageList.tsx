@@ -4,16 +4,28 @@ import { Message } from '@/types';
 import { MessageBubble } from './MessageBubble';
 import { useAuthStore } from '@/stores/authStore';
 import { format, isToday, isYesterday } from 'date-fns';
+import { useEffect, useRef, useState } from 'react';
 
 type Props = {
   messages: Message[];
   hasMore: boolean;
-  onLoadOlder: () => void;
+  onLoadOlder: () => Promise<unknown> | void;
   loadingOlder: boolean;
+  onReply: (message: Message) => void;
 };
 
-export function MessageList({ messages, hasMore, onLoadOlder, loadingOlder }: Props) {
+export function MessageList({
+  messages,
+  hasMore,
+  onLoadOlder,
+  loadingOlder,
+  onReply,
+}: Props) {
   const user = useAuthStore((state) => state.user);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const prevLengthRef = useRef(0);
+  const pendingPrependRef = useRef<{ prevHeight: number; prevTop: number } | null>(null);
+  const [isNearBottom, setIsNearBottom] = useState(true);
 
   if (!messages.length) {
     return (
@@ -23,12 +35,61 @@ export function MessageList({ messages, hasMore, onLoadOlder, loadingOlder }: Pr
     );
   }
 
+  const handleLoadOlder = async () => {
+    if (scrollRef.current) {
+      pendingPrependRef.current = {
+        prevHeight: scrollRef.current.scrollHeight,
+        prevTop: scrollRef.current.scrollTop,
+      };
+    }
+
+    await onLoadOlder();
+  };
+
+  const updateNearBottom = () => {
+    if (!scrollRef.current) {
+      return;
+    }
+
+    const distanceFromBottom =
+      scrollRef.current.scrollHeight - (scrollRef.current.scrollTop + scrollRef.current.clientHeight);
+    setIsNearBottom(distanceFromBottom < 120);
+  };
+
+  useEffect(() => {
+    if (!scrollRef.current) {
+      return;
+    }
+
+    const currentLength = messages.length;
+
+    if (prevLengthRef.current === 0) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      prevLengthRef.current = currentLength;
+      return;
+    }
+
+    if (pendingPrependRef.current) {
+      const delta = scrollRef.current.scrollHeight - pendingPrependRef.current.prevHeight;
+      scrollRef.current.scrollTop = pendingPrependRef.current.prevTop + delta;
+      pendingPrependRef.current = null;
+      prevLengthRef.current = currentLength;
+      return;
+    }
+
+    if (isNearBottom) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+
+    prevLengthRef.current = currentLength;
+  }, [messages, isNearBottom]);
+
   return (
-    <div className="flex-1 overflow-y-auto py-4">
+    <div ref={scrollRef} onScroll={updateNearBottom} className="flex-1 overflow-y-auto py-4">
       <div className="mb-3 flex justify-center">
         {hasMore ? (
           <button
-            onClick={onLoadOlder}
+            onClick={() => void handleLoadOlder()}
             disabled={loadingOlder}
             className="rounded-full border border-[#2A3942] bg-[#111B21] px-3 py-1 text-xs text-[var(--wa-text-secondary)] disabled:opacity-70"
           >
@@ -61,7 +122,11 @@ export function MessageList({ messages, hasMore, onLoadOlder, loadingOlder }: Pr
                 </span>
               </div>
             ) : null}
-            <MessageBubble message={message} isOwn={message.senderId === user?.id} />
+            <MessageBubble
+              message={message}
+              isOwn={message.senderId === user?.id}
+              onReply={onReply}
+            />
           </div>
         );
       })}
