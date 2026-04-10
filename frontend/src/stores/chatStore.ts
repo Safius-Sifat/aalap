@@ -1,6 +1,15 @@
 import type { Chat, Message } from '@/types';
 import { create } from 'zustand';
 
+function normalizeChat(chat: Chat): Chat {
+    return {
+        ...chat,
+        members: Array.isArray(chat.members) ? chat.members : [],
+        messages: Array.isArray(chat.messages) ? chat.messages : [],
+        unreadCount: typeof chat.unreadCount === 'number' ? chat.unreadCount : 0,
+    };
+}
+
 type ChatState = {
     chats: Chat[];
     activeChatId: string | null;
@@ -20,16 +29,19 @@ export const useChatStore = create<ChatState>((set) => ({
     activeChatId: null,
     typingUsers: {},
     replyTo: null,
-    setChats: (chats) => set({ chats }),
+    setChats: (chats) => set({ chats: chats.map(normalizeChat) }),
     upsertChat: (chat) =>
         set((state) => {
+            const normalizedChat = normalizeChat(chat);
             const existing = state.chats.find((c) => c.id === chat.id);
             if (!existing) {
-                return { chats: [chat, ...state.chats] };
+                return { chats: [normalizedChat, ...state.chats] };
             }
 
             return {
-                chats: state.chats.map((c) => (c.id === chat.id ? { ...existing, ...chat } : c)),
+                chats: state.chats.map((c) =>
+                    c.id === chat.id ? normalizeChat({ ...existing, ...normalizedChat }) : c,
+                ),
             };
         }),
     setActiveChat: (id) => set({ activeChatId: id }),

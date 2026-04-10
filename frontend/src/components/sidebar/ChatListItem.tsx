@@ -14,11 +14,13 @@ type Props = {
 
 export function ChatListItem({ chat, isActive, onClick }: Props) {
   const user = useAuthStore((state) => state.user);
-  const lastMessage = chat.messages[0];
+  const lastMessage = chat.messages?.[0];
+  const members = chat.members ?? [];
 
-  const otherMember = chat.members.find((member) => member.userId !== user?.id)?.user;
+  const otherMember = members.find((member) => member.userId !== user?.id)?.user;
   const displayName = chat.type === 'GROUP' ? chat.name : otherMember?.name;
   const avatar = chat.type === 'GROUP' ? chat.avatar : otherMember?.avatar;
+  const unreadCount = chat.unreadCount ?? 0;
 
   return (
     <button
@@ -47,7 +49,7 @@ export function ChatListItem({ chat, isActive, onClick }: Props) {
                   ? 'Video'
                   : lastMessage?.content ?? 'No messages yet'}
           </span>
-          {chat.unreadCount > 0 ? <Badge>{chat.unreadCount > 99 ? '99+' : chat.unreadCount}</Badge> : null}
+          {unreadCount > 0 ? <Badge>{unreadCount > 99 ? '99+' : unreadCount}</Badge> : null}
         </div>
       </div>
     </button>

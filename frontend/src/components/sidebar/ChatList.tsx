@@ -23,7 +23,9 @@ export function ChatList({ query }: Props) {
     const q = query.toLowerCase();
     return chats.filter((chat) => {
       const groupName = chat.name?.toLowerCase() ?? '';
-      const memberNames = chat.members.map((member) => member.user.name.toLowerCase()).join(' ');
+      const memberNames = (chat.members ?? [])
+        .map((member) => member.user.name.toLowerCase())
+        .join(' ');
       return groupName.includes(q) || memberNames.includes(q);
     });
   }, [chats, query]);
