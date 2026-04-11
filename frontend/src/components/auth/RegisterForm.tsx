@@ -1,6 +1,6 @@
 'use client';
 
-import { api } from '@/lib/api';
+import { publicApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
@@ -42,7 +42,7 @@ export function RegisterForm() {
   const onSubmit = async (values: RegisterInput) => {
     setSubmitError(null);
     try {
-      const { data } = await api.post('/auth/register', values);
+      const { data } = await publicApi.post('/auth/register', values);
       setAuth(data.user, data.accessToken, data.refreshToken);
       router.replace('/chat');
     } catch (error) {

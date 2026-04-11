@@ -4,6 +4,19 @@ import axios from 'axios';
 const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 const apiBaseUrl = configuredApiUrl ? `${configuredApiUrl}/api` : '/api';
 
+const isAuthEndpoint = (url?: string) => {
+  if (!url) {
+    return false;
+  }
+
+  return /\/auth\/(login|register|refresh)\/?$/.test(url);
+};
+
+export const publicApi = axios.create({
+  baseURL: apiBaseUrl,
+  withCredentials: true,
+});
+
 export const api = axios.create({
   baseURL: apiBaseUrl,
   withCredentials: true,
@@ -21,8 +34,10 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
+    const requestUrl = original?.url as string | undefined;
+    const isAuthRequest = isAuthEndpoint(requestUrl);
 
-    if (error.response?.status === 401 && !original?._retry) {
+    if (error.response?.status === 401 && !isAuthRequest && !original?._retry) {
       original._retry = true;
 
       try {
