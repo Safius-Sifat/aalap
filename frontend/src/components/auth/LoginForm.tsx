@@ -6,8 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 const loginSchema = z.object({

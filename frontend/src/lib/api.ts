@@ -1,5 +1,5 @@
-import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
+import axios from 'axios';
 
 const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 const apiBaseUrl = configuredApiUrl ? `${configuredApiUrl}/api` : '/api';
