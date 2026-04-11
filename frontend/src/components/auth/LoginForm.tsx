@@ -3,14 +3,19 @@
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { zodResolver } from '@hookform/resolvers/zod';
+import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { useState } from 'react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
-  phone: z.string().min(8),
-  password: z.string().min(6),
+  phone: z
+    .string()
+    .min(8, 'Phone number must be at least 8 digits')
+    .regex(/^\+?[0-9]{8,15}$/, 'Enter a valid phone number'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 type LoginInput = z.infer<typeof loginSchema>;
@@ -18,6 +23,7 @@ type LoginInput = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -32,9 +38,22 @@ export function LoginForm() {
   });
 
   const onSubmit = async (values: LoginInput) => {
-    const { data } = await api.post('/auth/login', values);
-    setAuth(data.user, data.accessToken, data.refreshToken);
-    router.replace('/chat');
+    setSubmitError(null);
+    try {
+      const { data } = await api.post('/auth/login', values);
+      setAuth(data.user, data.accessToken, data.refreshToken);
+      router.replace('/chat');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message =
+          (error.response?.data as { message?: string | string[] } | undefined)?.message ??
+          'Unable to sign in. Please try again.';
+        setSubmitError(Array.isArray(message) ? message.join(', ') : message);
+        return;
+      }
+
+      setSubmitError('Unable to sign in. Please try again.');
+    }
   };
 
   return (
@@ -69,6 +88,8 @@ export function LoginForm() {
       >
         {isSubmitting ? 'Signing in...' : 'Sign in'}
       </button>
+
+      {submitError ? <p className="text-sm text-red-400">{submitError}</p> : null}
 
       <p className="text-sm text-[var(--wa-text-secondary)]">
         No account?{' '}

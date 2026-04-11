@@ -7,7 +7,9 @@ export function getSocket(token: string): Socket {
     return socket;
   }
 
-  socket = io(process.env.NEXT_PUBLIC_SOCKET_URL as string, {
+  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL?.trim() || window.location.origin;
+
+  socket = io(socketUrl, {
     auth: { token },
     transports: ['websocket'],
     reconnection: true,

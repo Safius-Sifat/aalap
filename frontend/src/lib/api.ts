@@ -1,8 +1,11 @@
 import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+const apiBaseUrl = configuredApiUrl ? `${configuredApiUrl}/api` : '/api';
+
 export const api = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
+  baseURL: apiBaseUrl,
   withCredentials: true,
 });
 
@@ -28,7 +31,7 @@ api.interceptors.response.use(
           throw new Error('No refresh token');
         }
 
-        const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh`, {
+        const { data } = await api.post('/auth/refresh', {
           refreshToken,
         });
 

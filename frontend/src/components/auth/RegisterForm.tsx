@@ -3,15 +3,20 @@
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
 import { zodResolver } from '@hookform/resolvers/zod';
+import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { useState } from 'react';
 import { z } from 'zod';
 
 const registerSchema = z.object({
-  name: z.string().min(2),
-  phone: z.string().min(8),
-  password: z.string().min(6),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  phone: z
+    .string()
+    .min(8, 'Phone number must be at least 8 digits')
+    .regex(/^\+?[0-9]{8,15}$/, 'Enter a valid phone number'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 type RegisterInput = z.infer<typeof registerSchema>;
@@ -19,6 +24,7 @@ type RegisterInput = z.infer<typeof registerSchema>;
 export function RegisterForm() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -34,9 +40,22 @@ export function RegisterForm() {
   });
 
   const onSubmit = async (values: RegisterInput) => {
-    const { data } = await api.post('/auth/register', values);
-    setAuth(data.user, data.accessToken, data.refreshToken);
-    router.replace('/chat');
+    setSubmitError(null);
+    try {
+      const { data } = await api.post('/auth/register', values);
+      setAuth(data.user, data.accessToken, data.refreshToken);
+      router.replace('/chat');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message =
+          (error.response?.data as { message?: string | string[] } | undefined)?.message ??
+          'Unable to create account. Please try again.';
+        setSubmitError(Array.isArray(message) ? message.join(', ') : message);
+        return;
+      }
+
+      setSubmitError('Unable to create account. Please try again.');
+    }
   };
 
   return (
@@ -80,6 +99,8 @@ export function RegisterForm() {
       >
         {isSubmitting ? 'Creating...' : 'Create account'}
       </button>
+
+      {submitError ? <p className="text-sm text-red-400">{submitError}</p> : null}
 
       <p className="text-sm text-[var(--wa-text-secondary)]">
         Already have an account?{' '}
