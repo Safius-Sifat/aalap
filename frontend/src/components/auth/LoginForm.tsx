@@ -34,7 +34,7 @@ export function LoginForm() {
   const onSubmit = async (values: LoginInput) => {
     const { data } = await api.post('/auth/login', values);
     setAuth(data.user, data.accessToken, data.refreshToken);
-    router.replace('/');
+    router.replace('/chat');
   };
 
   return (

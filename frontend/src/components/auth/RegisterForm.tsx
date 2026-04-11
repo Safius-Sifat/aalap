@@ -36,7 +36,7 @@ export function RegisterForm() {
   const onSubmit = async (values: RegisterInput) => {
     const { data } = await api.post('/auth/register', values);
     setAuth(data.user, data.accessToken, data.refreshToken);
-    router.replace('/');
+    router.replace('/chat');
   };
 
   return (
