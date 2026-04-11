@@ -21,7 +21,7 @@ dist
 coverage
 
 # Prisma
-backend/prisma/migrations
+# Migrations should be committed to git for production deployments
 
 # Next.js
 frontend/.next
